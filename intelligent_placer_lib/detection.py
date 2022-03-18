@@ -3,42 +3,13 @@ from typing import Optional, List, Tuple
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from skimage.color import rgb2gray
-from skimage.feature import canny
 from skimage.filters import gaussian, sobel
-from skimage.measure import label
-from skimage.segmentation import watershed
 
 from .descriptor import get_descriptor, Point, match_descriptors
-from .utils import Area, to_grayscale, to_uint8_image
+from .utils import to_grayscale, to_uint8_image
 
 MIN_OBJECT_WIDTH: int = 50
 MIN_OBJECT_AREA: int = MIN_OBJECT_WIDTH * MIN_OBJECT_WIDTH
-MIN_OBJECTS_DIST: int = 10
-
-
-def get_polygon_mask(image: np.ndarray, area: Area) -> Optional[np.ndarray]:
-    result = np.zeros(shape=(image.shape[0], image.shape[1]))
-    if image.ndim == 3:
-        data = rgb2gray(image)
-    else:
-        data = image
-    im_polygon = data[:, :area.left_x]
-
-    im_polygon = gaussian(im_polygon, 5)
-    polygon_bounds = canny(im_polygon, sigma=1)
-    polygons_mask = watershed(polygon_bounds)
-    polygons_mask = polygons_mask > 1
-
-    segmented_bound = np.logical_and(polygons_mask, polygon_bounds)
-    bound_is_darker = np.percentile(im_polygon[segmented_bound], 25) < np.mean(im_polygon)
-    bound_closed = np.percentile(im_polygon[segmented_bound], 75) < np.mean(im_polygon[polygons_mask])
-    labeled, polygons_num = label(polygons_mask, connectivity=2, return_num=True)
-    if not bound_closed or not bound_is_darker or polygons_num != 1:
-        return None
-
-    result[:, :area.left_x] = polygons_mask
-    return result
 
 
 def _get_objects_contours(image: np.ndarray) -> List:
@@ -111,61 +82,6 @@ def _classify_objects(contours, image: np.ndarray) -> Tuple[np.ndarray, List]:
     return segmented, res_contours
 
 
-# def get_items_mask(image: np.ndarray, surface: np.ndarray) -> np.ndarray:
-#     from .utils import items_info
-#     contours = _get_objects_contours(image)
-#     detector = cv2.SIFT_create(nOctaveLayers=5, edgeThreshold=30)
-#     segmented = np.zeros((image.shape[0], image.shape[1]), dtype='uint8')
-#     for contour in contours:
-#         x, y, w, h = cv2.boundingRect(contour)
-#         object_im = np.copy(image[y: y + h, x: x + w])
-#         for item_source, item_mask, _, _, item_class in items_info(detector):
-#             matched = cv2.matchTemplate(object_im, item_source, cv2.TM_CCOEFF_NORMED)
-#             print(cv2.minMaxLoc(matched))
-#     return segmented
-
-def get_items_mask(image: np.ndarray, surface: np.ndarray) -> Optional[np.ndarray]:
+def get_items_mask(image: np.ndarray) -> Tuple[np.ndarray, List]:
     cnt = _get_objects_contours(image)
     return _classify_objects(cnt, image)
-
-# def get_items_mask(image: np.ndarray, surface: np.ndarray) -> Optional[np.ndarray]:
-#     from .utils import items_info
-#     detector = cv2.SIFT_create(nOctaveLayers=5, edgeThreshold=30)
-#     index_params = dict(algorithm=2, trees=10)
-#     search_params = dict(checks=100)
-#     matcher = cv2.FlannBasedMatcher(index_params, search_params)
-#     segmented = np.zeros((image.shape[0], image.shape[1]))
-#
-#     kp, des = detector.detectAndCompute(image, None)
-#     for item_source, item_mask, item_kp, item_des, item_class in items_info(detector):
-#         matches = matcher.knnMatch(item_des, des, k=2)
-#
-#         matched = list(filter(lambda e: e[0].distance < 0.6 * e[1].distance, matches))
-#
-#         src_key_pts = np.float32([item_kp[m.queryIdx].pt for m, n in matched]).reshape(-1, 1, 2)
-#         dst_key_pts = np.float32([kp[m.trainIdx].pt for m, n in matched]).reshape(-1, 1, 2)
-#         plt.imshow(image)
-#         plt.scatter(dst_key_pts[:, :, 0], dst_key_pts[:, :, 1])
-#         plt.show()
-#         plt.imshow(item_source)
-#         plt.scatter(src_key_pts[:, :, 0], src_key_pts[:, :, 1])
-#         plt.show()
-#         if matched is None or len(matched) < 4 or item_kp is None:
-#             continue
-#         matrix, mask = cv2.findHomography(src_key_pts, dst_key_pts, cv2.RANSAC, 5.0)
-#         if matrix is None:
-#             continue
-#         p = np.where(item_mask >= 200)
-#         mask_points = [[point[1], point[0]] for point in zip(*p)]
-#         new_mask_points = cv2.perspectiveTransform(np.float32(mask_points).reshape(-1, 1, 2), matrix)[:, 0, :]
-#         for point in new_mask_points:
-#             if segmented.shape[0] <= int(point[1]) or int(point[1]) < 0 \
-#                     or segmented.shape[1] <= int(point[0]) or int(point[0]) < 0 :
-#                 continue
-#             #if segmented[int(point[1])][int(point[0])] != 0:
-#             #    return None
-#             segmented[int(point[1])][int(point[0])] = item_class
-#         plt.imshow(segmented+230)
-#         plt.show()
-#         print(new_mask_points)
-#     return segmented
