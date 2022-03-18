@@ -1,3 +1,3 @@
-from .intelligent_placer import check_image, Area
-from .detection import get_polygon_mask, get_items_mask
+from .intelligent_placer import check_image
+from .detection import get_items_mask
 from .utils import read_image
