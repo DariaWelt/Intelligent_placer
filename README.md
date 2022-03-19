@@ -66,11 +66,12 @@ for testing:
 
 ## Improvements todo
 
-Time:
+#### Time:
 - reduce size of items images so theirs contours will be calculated faster
 - read all images in memory once
 - set maximum number of contour points (because we have two items with a circular shape)
 
-Accuracy:
+#### Accuracy:
+- Consider that pixel in item mask could be addressed with area (set of pixels) in result mask
 - replace naive algorithm of placing with the arranging of objects by parallel transfer
 - use physics solutions: place objects randomly to polygon and use potential field method
