@@ -18,29 +18,29 @@ class Point:
 
 def get_descriptor(point: Point, image: np.ndarray, window: Tuple[int, int]):
     kernel_h, kernel_w = math.floor(window[0] / 2), math.floor(window[1] / 2)
-    SD = SIFTDescriptor(patchSize=kernel_w * 2 + 1)
+    sd = SIFTDescriptor(patchSize=kernel_w * 2 + 1)
     image = to_grayscale(image)
     try:
         patch = image[point.y - kernel_h: point.y + kernel_h + 1,
                       point.x - kernel_w: point.x + kernel_w + 1]
     except Exception:
         raise ValueError(f'The object has less than {max(kernel_w, kernel_h)} pixels to the edge of the image')
-    return SD.describe(patch).flatten()
+    return sd.describe(patch).flatten()
 
 
 def match_descriptors(descriptors_1: np.ndarray, descriptors_2: np.ndarray):
-    swaped = False
+    swapped = False
     if descriptors_1.shape[0] > descriptors_2.shape[0]:
         descriptors_1, descriptors_2 = descriptors_2, descriptors_1
-        swaped = True
+        swapped = True
     cost_matrix = np.zeros((descriptors_2.shape[0],) * 2)
     dist = distance_matrix(descriptors_1, descriptors_2)
     cost_matrix[0: dist.shape[0], :] = dist
     _, x, y = lap.lapjv(cost_matrix)
-    return [(res, i) for i, res in enumerate(y[0: dist.shape[0]])] if swaped else list(enumerate(x[0: dist.shape[0]]))
+    return [(res, i) for i, res in enumerate(y[0: dist.shape[0]])] if swapped else list(enumerate(x[0: dist.shape[0]]))
 
 
-# Autor https://github.com/ducha-aiki/wxbs-descriptors-benchmark
+# Author https://github.com/ducha-aiki/wxbs-descriptors-benchmark
 # Don't review the code below, because it's not mine
 class SIFTDescriptor(object):
     """Class for computing SIFT descriptor of the square patch

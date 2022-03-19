@@ -2,6 +2,7 @@ from enum import Enum
 from typing import List, Tuple
 
 import cv2
+import numpy as np
 
 from .detection import get_items_mask
 from .utils import read_image
@@ -24,12 +25,16 @@ def validate_input(im_size: Tuple[int, int], polygon: List[Tuple[float, float]],
         raise ValueError(f'Invalid polygon coordinates values: points are bigger than maximums: {(max_x, max_y)}.')
 
 
-def check_image(image_path: str, polygon: List[Tuple[float, float]], mode: str = 'pixels') -> bool:
+def check_image(image_path: str, polygon: List[Tuple[float, float]], mode: str = 'pixels',
+                verbose: bool = False) -> bool:
     image_data = read_image(image_path)
     validate_input((image_data.shape[0], image_data.shape[1]), polygon, mode)
-    segmented_items, contours = get_items_mask(image_data)
-    if not any(segmented_items > 0):
+    segmented_items, contours = get_items_mask(image_data, verbose)
+    if not (segmented_items > 0).any():
         return False
+    if mode == PolygonMode.relative.value:
+        polygon = [[p[0] * image_data.shape[1], p[1] * image_data.shape[0]] for p in polygon]
+    polygon = np.array(polygon, dtype=np.int32)
     if not sum([cv2.contourArea(cnt) for cnt in contours]) < cv2.contourArea(polygon):
         return False
     return True

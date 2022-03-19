@@ -12,13 +12,21 @@ MIN_OBJECT_WIDTH: int = 50
 MIN_OBJECT_AREA: int = MIN_OBJECT_WIDTH * MIN_OBJECT_WIDTH
 
 
-def _get_objects_contours(image: np.ndarray) -> List:
+def _get_objects_contours(image: np.ndarray, verbose: bool = False) -> List:
     source = to_grayscale(gaussian(image, int(MIN_OBJECT_WIDTH / 10)))
     bounds = sobel(source)
-    _, bounds = cv2.threshold(bounds, np.percentile(bounds, 95), bounds.max(),0)
+    if verbose:
+        plt.imshow(bounds)
+        plt.title('image bound')
+        plt.show()
+    _, bounds = cv2.threshold(bounds, np.percentile(bounds, 95), bounds.max(), 0)
     contours, hierarchy = cv2.findContours(to_uint8_image(bounds), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     im = np.zeros((bounds.shape[0], bounds.shape[1], 3))
     cv2.drawContours(im, contours, -1, (0, 255, 0))
+    if verbose:
+        plt.imshow(im)
+        plt.title('image contours')
+        plt.show()
     return list(filter(lambda contour: cv2.contourArea(contour) >= MIN_OBJECT_AREA, contours))
 
 
@@ -47,7 +55,7 @@ def _get_transformed_mask(segmented: np.ndarray, src_pts: np.ndarray, dst_pts: n
     return segmented
 
 
-def _classify_objects(contours, image: np.ndarray) -> Tuple[np.ndarray, List]:
+def _classify_objects(contours, image: np.ndarray, verbose: bool = False) -> Tuple[np.ndarray, List]:
     from .utils import items_info
 
     segmented = np.zeros((image.shape[0], image.shape[1]), dtype='uint8')
@@ -75,13 +83,19 @@ def _classify_objects(contours, image: np.ndarray) -> Tuple[np.ndarray, List]:
                                               matched_class)
         if cur_segmented is None:
             continue
+        if verbose:
+            plt.imshow(cur_segmented + 220)
+            plt.title(f'segmented class {matched_class}')
+            plt.show()
         segmented = cur_segmented
         res_contours.append(contour)
-    plt.imshow(segmented)
-    plt.show()
+    if verbose:
+        plt.imshow(segmented + 220)
+        plt.title(f'segmentation')
+        plt.show()
     return segmented, res_contours
 
 
-def get_items_mask(image: np.ndarray) -> Tuple[np.ndarray, List]:
-    cnt = _get_objects_contours(image)
-    return _classify_objects(cnt, image)
+def get_items_mask(image: np.ndarray, verbose: bool = False) -> Tuple[np.ndarray, List]:
+    cnt = _get_objects_contours(image, verbose)
+    return _classify_objects(cnt, image, verbose)

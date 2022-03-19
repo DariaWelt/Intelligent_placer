@@ -4,15 +4,15 @@
       "path": "IMG_0.jpg",
       "polygon": {
         "mode": "relative",
-        "data": [[0,0], [0, 0.8], [0.5, 0.8]]
+        "data": [[0, 0], [0.5, 0], [0.3, 0.4]]
       },
       "groundTruth": 0
     },
     {
-      "path": "IMG_1.jpg",
+      "path": "IMG_2.jpg",
       "polygon": {
         "mode": "pixels",
-        "data": [[0,0], [0, 200], [150, 300]]
+        "data": [[100,500], [100, 1457], [578, 1457], [578, 500]]
       },
       "groundTruth": 1
     }
