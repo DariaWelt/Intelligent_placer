@@ -38,7 +38,7 @@ def to_grayscale(image: np.ndarray) -> np.ndarray:
 
 def to_uint8_image(image: np.ndarray) -> np.ndarray:
     m = image.max()
-    image = image / m if m != 0 else 0
+    image = image / m if m != 0 else image * 0
     image = np.clip(image * 255, 0, 255).astype('uint8')
     return image
 

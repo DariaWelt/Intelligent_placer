@@ -34,19 +34,20 @@ https://drive.google.com/drive/folders/1XGFnvI2nywZ0e6qcOO4kyAmzYbnEYxoU?usp=sha
 
 ## Placer Algorithm
 The algorithm for finding objects:
-1. Get the contours of the image using the `skimage.filters.sobel`
-2. Remove the noise from the obtained image of the contour by binarization
-3. Represent contours as a polygon using `cv2.findContours`
-4. Consider only contours with area no less than 50*50 pixels, because the minimum width of the object is 50 pixels 
+1. Get blurred image using `skimage.filters.gaussian(image, 5)` and convert it into grayscale
+2. Get the contours of the image using the `skimage.filters.sobel`
+3. Remove the noise from the obtained image of the contour by binarization
+4. Represent contours as a polygon using `cv2.findContours`
+5. Consider only contours with area no less than 50*50 pixels, because the minimum width of the object is 50 pixels 
 according to the stipulation
-5. Match each found contour with the object whose contour is most similar to the given one. If all the contours are not
+6. Match each found contour with the object whose contour is most similar to the given one. If all the contours are not
  similar, remove the current one from consideration
-6. Construct a descriptor (a vector of 128 numbers) for each point on the contour of the object to be identified
-7. Construct a descriptor for each point on the contour of the matched object
-8. Solve the assignment problem for the distance matrix between these points and map the contour points to each other
-9. Find the homography matrix and project the mask of the object onto the mask of the size of the input image. Assign
+7. Construct a descriptor (a vector of 128 numbers) for each point on the contour of the object to be identified
+8. Construct a descriptor for each point on the contour of the matched object
+9. Solve the assignment problem for the distance matrix between these points and map the contour points to each other
+10. Find the homography matrix and project the mask of the object onto the mask of the size of the input image. Assign
  pixels of the mask to the label values of the matched object class
-10. If the homography matrix is not found, or the points of the projected mask are out of bounds, or these points 
+11. If the homography matrix is not found, or the points of the projected mask are out of bounds, or these points 
 intersect with another segmented object, we consider that the object is not identified, otherwise we add the identified
 contour to the set of "good" contours
 
