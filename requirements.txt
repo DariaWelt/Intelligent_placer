@@ -1,0 +1,9 @@
+numpy
+matplotlib
+lap
+scipy
+scikit-learn
+scikit-image
+opencv-python~=4.5
+pillow
+pytest
