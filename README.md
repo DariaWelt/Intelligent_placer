@@ -15,7 +15,7 @@ Algorithm output:
 ## Input image requirements
 - Objects cannot intersect;
 - Objects must fully fit into the area specified in the algorithm parameter;
-- There must be a distance of at least 10 pixels between objects;
+- There must be a distance of at least 50 pixels between objects;
 - The smaller of the two visible object dimensions must be at least 50 pixels;
 - The larger of the two visible object dimensions must be at least 100 pixels;
 - The angle of inclination of the chamber from the surface normal should be within 10 degrees;

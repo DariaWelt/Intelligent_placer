@@ -16,6 +16,9 @@ class Area(NamedTuple):
     down_y: int
 
 
+IM_LARGER_SIDE = 1000
+
+
 def read_image(image_path: str, gray: bool = False) -> np.ndarray:
     image = np.array(Image.open(image_path))
     if image.ndim > 3:
@@ -26,6 +29,9 @@ def read_image(image_path: str, gray: bool = False) -> np.ndarray:
     channels_index = image.shape.index(channels_num)
     if image.ndim > 1 and channels_index != image.ndim - 1:
         image = np.moveaxis(image, channels_index, -1)
+    resize_scale = IM_LARGER_SIDE / max(image.shape)
+    image = cv2.resize(image, (int(image.shape[1] * resize_scale), int(image.shape[0] * resize_scale)),
+                       interpolation=cv2.INTER_CUBIC)
     if gray:
         image = to_grayscale(image)
     return to_uint8_image(image)
@@ -66,9 +72,6 @@ def items_info(detector: Optional[cv2.SIFT] = None, mask_filter: str = '_mask'):
     for item_name, item_class in classes.items():
         item_source = read_image(f'{data_path}/{item_name}{item_class[1]}')
         item_mask = read_image(f'{data_path}/{item_name}{mask_filter}{item_class[1]}', gray=True)
-
-        item_source = item_source[item_class[2].up_y: item_class[2].down_y, item_class[2].left_x: item_class[2].right_x]
-        item_mask = item_mask[item_class[2].up_y: item_class[2].down_y, item_class[2].left_x: item_class[2].right_x]
 
         _, item_mask = cv2.threshold(item_mask, 230, 255, 0)
         kp, des = None, None
