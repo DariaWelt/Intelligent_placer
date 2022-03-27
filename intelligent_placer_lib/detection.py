@@ -19,7 +19,7 @@ def _get_objects_contours(image: np.ndarray, verbose: bool = False) -> Tuple[Any
     bounds = sobel(source)
     _, bounds = cv2.threshold(bounds, np.percentile(bounds, 98), bounds.max(), 0)
     bounds = cv2.morphologyEx(bounds, cv2.MORPH_CLOSE, (MIN_DIST_BETWEEN, MIN_DIST_BETWEEN))
-    contours, hierarchy = cv2.findContours(to_uint8_image(bounds), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv2.findContours(to_uint8_image(bounds), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     good_cnts = list(filter(lambda contour: cv2.contourArea(contour) >= MIN_OBJECT_AREA, contours))
     if verbose:
         im = image.copy()
@@ -68,28 +68,28 @@ def _classify_objects(contours, polygon_max_x: int, image: np.ndarray, verbose: 
     for i, contour in enumerate(contours):
         if min([point[0][0] for point in contour]) < polygon_max_x:
             continue
+        im_des = np.array([get_descriptor(Point(c[0][1], c[0][0]), image, (5, 5)) for c in contour])
         res = 1
-        object_image, object_mask, matched_class, object_contour = None, None, 0, None
+        matched_class, best_matched = 0, 0
         for item_im, item_mask, _, _, item_class in items_info():
             item_contour, _ = cv2.findContours(to_uint8_image(item_mask), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             item_contour = sorted(item_contour, key=lambda cnt: cv2.contourArea(cnt))[0]
-            cur_res = cv2.matchShapes(item_contour, contour, 1, 0.0)
-            if cur_res < 0.3 and cur_res < res:
-                res = cur_res
-                matched_class = item_class
-                object_contour = item_contour
-                object_image = item_im
-                object_mask = item_mask
+            cur_res = cv2.matchShapes(item_contour, contour, cv2.cv2.CONTOURS_MATCH_I3, 0.0)
+            if cur_res < 0.4:
+                item_des = np.array(
+                    [get_descriptor(Point(c[0][1], c[0][0]), item_im, (5, 5)) for c in item_contour])
+                pairs = match_descriptors(item_des, im_des)
+                distances = [distance.euclidean(item_des[match[0]], im_des[match[1]]) /
+                             (np.linalg.norm(item_des[match[0]]) * np.linalg.norm(im_des[match[1]]))
+                             for match in pairs]
+                cur_matched = len(list(filter(lambda elem: elem < 0.002, distances)))
+                if cur_matched > best_matched:
+                    best_matched = cur_matched
+                    res = cur_res
+                    matched_class = item_class
         if res == 1:
             continue
-        item_des = np.array([get_descriptor(Point(c[0][1], c[0][0]), object_image, (5, 5)) for c in object_contour])
-        im_des = np.array([get_descriptor(Point(c[0][1], c[0][0]), image, (5, 5)) for c in contour])
-        matched = match_descriptors(item_des, im_des)
-        k = [distance.euclidean(item_des[match[0]], im_des[match[1]]) /
-             (np.linalg.norm(item_des[match[0]]) * np.linalg.norm(im_des[match[1]]))
-             for match in matched]
-        m = list(filter(lambda elem: elem < 0.0012, k))
-        if len(m) < 15:
+        if best_matched < 10:
             continue
         cur_segmented = segmented.copy()
         cv2.drawContours(cur_segmented, [contour], -1, matched_class, cv2.FILLED)
