@@ -30,7 +30,7 @@ def check_image(image_path: str, verbose: bool = False) -> bool:
         if result:
             if verbose:
                 plt.imshow(placed)
-                plt.title('Placed objects')
+                plt.title('Placed objects.')
                 plt.show()
             return result
     return False
