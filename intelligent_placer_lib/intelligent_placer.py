@@ -26,7 +26,7 @@ def check_image(image_path: str, verbose: bool = False) -> bool:
     for i in range(TRY_PLACE_TIMES):
         objects_masks = [segmented_items.copy()[prop.bbox[0]:prop.bbox[2], prop.bbox[1]: prop.bbox[3]]
                          for prop in regionprops(segmented_items)]
-        result, placed = place_objects(polygon_mask, objects_masks)
+        result, placed = place_objects(polygon_mask, objects_masks, rotations=True)
         if result:
             if verbose:
                 plt.imshow(placed)
@@ -34,7 +34,3 @@ def check_image(image_path: str, verbose: bool = False) -> bool:
                 plt.show()
             return result
     return False
-
-
-if __name__ == '__main__':
-    print(check_image('test/data/IMG_0_figure1_1.jpg', verbose=True))

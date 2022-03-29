@@ -65,7 +65,7 @@ for testing:
 - put dataset into `test/data`
 - put dataset specification json into `test/data`. Example of such file already put here.
 
-## Improvements todo
+## Improvements todo from version 1
 
 #### Time:
 - reduce size of items images so theirs contours will be calculated faster
@@ -76,3 +76,15 @@ for testing:
 - Consider that pixel in item mask could be addressed with area (set of pixels) in result mask
 - replace naive algorithm of placing with the arranging of objects by parallel transfer
 - use physics solutions: place objects randomly to polygon and use potential field method
+
+## Improved in version 1
+- new method od placing objects: objects are placed recursively with movements and rotations by 5 degree per iteration
+- modified classification method: now contours get less impact and descriptors - more
+- resized input images so algorithm works faster
+- started implementation of genetic algo for placing problem
+- dataset extended
+
+## Improvements todo from version 2
+- implement genetic algo
+- add to dataset examples with shadow impact
+- evaluate precicion, accuracy and recall automatically (manual for now)
