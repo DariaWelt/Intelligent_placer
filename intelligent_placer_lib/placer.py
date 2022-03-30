@@ -7,13 +7,19 @@ import numpy as np
 from skimage.measure import regionprops
 
 
+def estimate_possibility(figure_mask: np.ndarray, objects_masks: List[np.ndarray]) -> bool:
+    if np.sum(figure_mask > 0) < sum([np.sum(object_mask > 0) for object_mask in objects_masks]):
+        return False
+    return True
+
+
 def try_place(figure_mask: np.ndarray, object_mask: np.ndarray, start_x: int, start_y:int) -> Tuple[int, int]:
     x = start_x
     while x + object_mask.shape[1] < figure_mask.shape[1]:
         y = start_y
         while y + object_mask.shape[0] < figure_mask.shape[0]:
             cur_figure_area = figure_mask[y : y + object_mask.shape[0], x : x + object_mask.shape[1]]
-            outliers = np.logical_and(np.logical_xor(cur_figure_area > 0, object_mask > 0), cur_figure_area == 0)
+            outliers = np.logical_and(np.logical_xor(cur_figure_area == 255, object_mask > 0), cur_figure_area != 255)
             if outliers.any():
                 y += 1
             else:
@@ -67,7 +73,7 @@ def place_recursively(figure_mask: np.ndarray, objects_masks: List[np.ndarray], 
                 if len(objects_masks) == 1:
                     return True, placed_mask
                 else:
-                    result, placed_mask = place_recursively(placed_mask, objects_masks[1:], 0, 0)
+                    result, placed_mask = place_recursively(placed_mask, objects_masks[1:], 0, 0, rotations)
                     if result:
                         return True, placed_mask
                 y += 1
@@ -77,6 +83,8 @@ def place_recursively(figure_mask: np.ndarray, objects_masks: List[np.ndarray], 
 
 def place_objects(polygon_mask: np.ndarray, objects_masks: List[np.ndarray],
                   rotations: bool = False) -> Tuple[bool, np.ndarray]:
+    if not estimate_possibility(polygon_mask, objects_masks):
+        return False, None
     figure_mask = polygon_mask.copy()
     prop = regionprops(figure_mask)[0]
     figure_mask = figure_mask[prop.bbox[0]:prop.bbox[2], prop.bbox[1]: prop.bbox[3]]

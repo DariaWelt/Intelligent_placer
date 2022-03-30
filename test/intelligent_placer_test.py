@@ -18,7 +18,6 @@ def load_cases(test_dir_path: Union[str, os.PathLike]):
     for root, dirs, files in os.walk(test_dir_path):
         for file in files:
             try:
-                tmp = os.path.splitext(file)[-2]
                 result = bool(int(os.path.splitext(file)[-2][-1]))
                 cases.append(IntelligentPlacerCase(os.path.join(test_dir_path, file), result))
             except ValueError:

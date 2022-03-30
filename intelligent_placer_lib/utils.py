@@ -17,6 +17,8 @@ class Area(NamedTuple):
 
 
 IM_LARGER_SIDE = 1000
+RED_CIRCLE_CLASS = 4
+BLUE_RECT_CLASS = 1
 
 
 def read_image(image_path: str, gray: bool = False) -> np.ndarray:
@@ -54,27 +56,43 @@ def package_path(*paths, package_directory=os.path.dirname(os.path.abspath(__fil
 
 
 classes = {
-        'item1': [1, '.jpg', Area(850, 2200, 400, 1750)],
-        'item2': [2, '.jpg', Area(1400, 2000, 790, 1700)],
-        'item3': [3, '.jpg', Area(200, 2500, 300, 1800)],
-        'item4': [4, '.jpg', Area(300, 2600, 300, 1800)],
-        'item5': [5, '.jpg', Area(300, 2600, 200, 1800)],
-        'item6': [6, '.jpg', Area(200, 2600, 300, 1800)],
-        'item7': [7, '.jpg', Area(200, 2600, 200, 1800)],
-        'item8': [8, '.jpg', Area(200, 2600, 200, 1800)],
-        'item9': [9, '.jpg', Area(300, 2600, 300, 1800)],
-        'item10': [10, '.jpg', Area(200, 2600, 300, 1800)],
+        'item1': [1, '.jpg'],
+        'item2': [2, '.jpg'],
+        'item3': [3, '.jpg'],
+        'item4': [4, '.jpg'],
+        'item5': [5, '.jpg'],
+        'item6': [6, '.jpg'],
+        'item7': [7, '.jpg'],
+        'item8': [8, '.jpg'],
+        'item9': [9, '.jpg'],
+        'item10': [10, '.jpg'],
 }
 
 
-def items_info(detector: Optional[cv2.SIFT] = None, mask_filter: str = '_mask'):
+def load_items(mask_filter: str = '_mask'):
     data_path = package_path('data')
-    for item_name, item_class in classes.items():
-        item_source = read_image(f'{data_path}/{item_name}{item_class[1]}')
-        item_mask = read_image(f'{data_path}/{item_name}{mask_filter}{item_class[1]}', gray=True)
-
+    items = []
+    for item_name, item_info in classes.items():
+        item_source = read_image(f'{data_path}/{item_name}{item_info[1]}')
+        item_mask = read_image(f'{data_path}/{item_name}{mask_filter}{item_info[1]}', gray=True)
         _, item_mask = cv2.threshold(item_mask, 230, 255, 0)
+        item_contour, _ = cv2.findContours(to_uint8_image(item_mask), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        item_contour = sorted(item_contour, key=lambda cnt: cv2.contourArea(cnt))[0]
+        items.append([item_info[0], item_source, item_mask, item_contour])
+    items.sort(key=lambda x: x[0])
+    return items
+
+
+items = load_items()
+
+
+def get_item(i: int):
+    return items[i]
+
+
+def items_info(detector: Optional[cv2.SIFT] = None, mask_filter: str = '_mask'):
+    for i, item_info in enumerate(items):
         kp, des = None, None
         if detector is not None:
-            kp, des = detector.detectAndCompute(np.clip(item_source * 255, 0, 255).astype('uint8'), None)
-        yield item_source, item_mask, kp, des, item_class[0]
+            kp, des = detector.detectAndCompute(np.clip(item_info[1] * 255, 0, 255).astype('uint8'), None)
+        yield item_info[1], item_info[2], item_info[3], item_info[0], kp, des

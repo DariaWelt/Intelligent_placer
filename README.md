@@ -32,6 +32,15 @@ https://drive.google.com/drive/folders/1gk90RoNKPqP_lwWpY8cYFQpLThSHtY2m?usp=sha
 Dataset for testing: images with jpg extension and csv file of input/output data: 
 https://drive.google.com/drive/folders/1XGFnvI2nywZ0e6qcOO4kyAmzYbnEYxoU?usp=sharing 
 
+## Get started
+- clone repository
+- upload photos of possible items with masks from drive and put it into `intelligent_placer_lib/data/`. If you want to 
+use yor own data, you could put it (images and masks) into this dir.
+
+for testing:
+- put dataset into `test/data`
+- put dataset specification json into `test/data`. Example of such file already put here.
+
 ## Placer Algorithm
 The algorithm for finding objects:
 1. Get blurred image using `skimage.filters.gaussian(image, 5)` and convert it into grayscale
@@ -56,14 +65,6 @@ The algorithm for place problem:
 2. Get the area of input polygon
 3. If the sum less than the area of input polygon, then return true, otherwise - false
 
-## Get started
-- clone repository
-- upload photos of possible items with masks from drive and put it into `intelligent_placer_lib/data/`. If you want to 
-use yor own data, you could put it (images and masks) into this dir.
-
-for testing:
-- put dataset into `test/data`
-- put dataset specification json into `test/data`. Example of such file already put here.
 
 ## Improvements todo from version 1
 
@@ -77,14 +78,17 @@ for testing:
 - replace naive algorithm of placing with the arranging of objects by parallel transfer
 - use physics solutions: place objects randomly to polygon and use potential field method
 
-## Improved in version 1
-- new method od placing objects: objects are placed recursively with movements and rotations by 5 degree per iteration
-- modified classification method: now contours get less impact and descriptors - more
+## Improved in version 2
+- implemented new method od placing objects: objects are placed recursively with movements and rotations by 5 degree per iteration
+- modified classification method: now contours get less impact and descriptors - more, calculated distances of pairs 
+and only "good" pairs are considered 
+- added exceptional check for red circle and blue phone(rectangle)
 - resized input images so algorithm works faster
 - started implementation of genetic algo for placing problem
-- dataset extended
+- extended dataset (added more examples with rotations and included example with shadow impact where algorithm don't work)
 
 ## Improvements todo from version 2
+- add the ability to parallelize evaluations in brute force parallel-rotate solution
 - implement genetic algo
-- add to dataset examples with shadow impact
-- evaluate precicion, accuracy and recall automatically (manual for now)
+- add exceptional check for keychain pass
+- evaluate precicion, accuracy and recall automatically (only manual for now)
