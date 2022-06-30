@@ -1,40 +1,34 @@
-from enum import Enum
-from typing import List, Tuple
-
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
+from skimage.measure import regionprops, label
 
-from .detection import get_items_mask
-from .utils import read_image
-
-
-class PolygonMode(Enum):
-    pixels = 'pixels'
-    relative = 'relative'
+from intelligent_placer_lib.detection import get_items_mask
+from intelligent_placer_lib.placer import place_objects
+from intelligent_placer_lib.utils import read_image
 
 
-def validate_input(im_size: Tuple[int, int], polygon: List[Tuple[float, float]], mode: str):
-    if mode not in PolygonMode.__members__:
-        raise ValueError('Unsupported polygon mode')
-    if len(polygon) < 3:  # or is_one_line(polygon)
-        raise ValueError('Polygon must have at least 3 angles')
-    if min(polygon, key=lambda x: x[1])[1] < 0 or min(polygon, key=lambda x: x[0])[0] < 0:
-        raise ValueError('Invalid polygon coordinates values: negative values are not supported')
-    max_y, max_x = (1, 1) if mode == PolygonMode.relative.value else im_size
-    if max(polygon, key=lambda x: x[1])[1] > max_y or max(polygon, key=lambda x: x[0])[0] > max_x:
-        raise ValueError(f'Invalid polygon coordinates values: points are bigger than maximums: {(max_x, max_y)}.')
+TRY_PLACE_TIMES = 1
 
 
-def check_image(image_path: str, polygon: List[Tuple[float, float]], mode: str = 'pixels',
-                verbose: bool = False) -> bool:
+def check_image(image_path: str, verbose: bool = False) -> bool:
     image_data = read_image(image_path)
-    validate_input((image_data.shape[0], image_data.shape[1]), polygon, mode)
-    segmented_items, contours = get_items_mask(image_data, verbose)
+    polygon_contour, segmented_items = get_items_mask(image_data, verbose)
     if not (segmented_items > 0).any():
         return False
-    if mode == PolygonMode.relative.value:
-        polygon = [[p[0] * image_data.shape[1], p[1] * image_data.shape[0]] for p in polygon]
-    polygon = np.array(polygon, dtype=np.int32)
-    if not sum([cv2.contourArea(cnt) for cnt in contours]) < cv2.contourArea(polygon):
-        return False
-    return True
+    polygon_mask = np.zeros((image_data.shape[0], image_data.shape[1]))
+    cv2.drawContours(polygon_mask, [polygon_contour], -1, 255, cv2.FILLED)
+    polygon_mask = polygon_mask.astype('uint8')
+    segmented_items = segmented_items.astype('uint8')
+    objects_masks = [segmented_items.copy()[prop.slice] * prop.image_filled
+                     for prop in regionprops(label(segmented_items))]
+    for i in range(min(TRY_PLACE_TIMES, len(objects_masks))):
+        cur_sequence = np.random.permutation(objects_masks)
+        result, placed = place_objects(polygon_mask, cur_sequence, rotations=True)
+        if result:
+            if verbose:
+                plt.imshow(placed)
+                plt.title('Placed objects.')
+                plt.show()
+            return result
+    return False
